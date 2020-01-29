@@ -14,7 +14,7 @@ During this training, you'll learn how to deploy Konvoy and to use its main feat
 * [3. Expose a Kubernetes Application using an Ingress (L7)](#3-expose-a-kubernetes-application-using-an-ingress-l7)
 * [4. Leverage Network Policies to restrict access](#4-leverage-network-policies-to-restrict-access)
 * [5. Leverage persistent storage using CSI](#5-leverage-persistent-storage-using-csi)
-* [6. Deploy Jenkins using Helm](#6-deploy-jenkins-using-helm)
+* [6. Deploy Studio](#6-deploy-studio)
 * [7. Deploy Apache Kafka using KUDO](#7-deploy-apache-kafka-using-kudo)
 * [8. Scale a Konvoy cluster](#8-scale-a-konvoy-cluster)
 * [9. Konvoy monitoring](#9-konvoy-monitoring)
@@ -22,6 +22,8 @@ During this training, you'll learn how to deploy Konvoy and to use its main feat
 * [11. Upgrade a Konvoy cluster](#11-upgrade-a-konvoy-cluster)
 * [12. Destroy a Konvoy cluster](#12-destroy-a-konvoy-cluster)
 * [Appendix 1. Setting up an external identity provider](#appendix-1-setting-up-an-external-identity-provider)
+* [Appendix 6. Deploy Jenkins using Helm](#appendix-6-deploy-jenkins-using-helm)
+
 
 ## Prerequisites
 
@@ -591,103 +593,17 @@ pod=$(kubectl get pods | grep ebs-dynamic-app | awk '{ print $1 }')
 kubectl exec -i $pod cat /data/out.txt
 ```
 
-## 6. Deploy Jenkins using Helm
-
-Helm is a tool for managing Kubernetes charts. Charts are packages of pre-configured Kubernetes resources.
-
-You can find many charts on the [Helm Hub](https://hub.helm.sh/).
-
-In this lab, we'll deploy the [Jenkins Helm chart](https://hub.helm.sh/charts/stable/jenkins).
-
-To deploy the chart, you need to run the following command:
-
-```bash
-helm install stable/jenkins --name jenkins --version 1.5.0 --set master.adminPassword=password
-```
-
-The output should be similar to:
-```bash
-NAME:   jenkins
-LAST DEPLOYED: Wed Aug  7 17:21:32 2019
-NAMESPACE: default
-STATUS: DEPLOYED
-
-RESOURCES:
-==> v1/ConfigMap
-NAME           DATA  AGE
-jenkins        5     1s
-jenkins-tests  1     1s
-
-==> v1/Deployment
-NAME     READY  UP-TO-DATE  AVAILABLE  AGE
-jenkins  0/1    1           0          1s
-
-==> v1/PersistentVolumeClaim
-NAME     STATUS   VOLUME                CAPACITY  ACCESS MODES  STORAGECLASS  AGE
-jenkins  Pending  awsebscsiprovisioner  1s
-
-==> v1/Pod(related)
-NAME                     READY  STATUS   RESTARTS  AGE
-jenkins-c79f457cb-ccttb  0/1    Pending  0         1s
-
-==> v1/Role
-NAME                     AGE
-jenkins-schedule-agents  1s
-
-==> v1/RoleBinding
-NAME                     AGE
-jenkins-schedule-agents  1s
-
-==> v1/Secret
-NAME     TYPE    DATA  AGE
-jenkins  Opaque  2     1s
-
-==> v1/Service
-NAME           TYPE          CLUSTER-IP  EXTERNAL-IP  PORT(S)         AGE
-jenkins        LoadBalancer  10.0.9.26   <pending>    8080:30323/TCP  1s
-jenkins-agent  ClusterIP     10.0.41.64  <none>       50000/TCP       1s
-
-==> v1/ServiceAccount
-NAME     SECRETS  AGE
-jenkins  1        1s
-```
-
-Then, run the following command to get the URL of the Load Balancer created on AWS for this service:
-
-```bash
-kubectl get svc jenkins
-```
-
-The output should be similar to:
-```bash
-NAME      TYPE           CLUSTER-IP   EXTERNAL-IP                                                              PORT(S)          AGE
-jenkins   LoadBalancer   10.0.9.26    a71b8025991124a90b2babf7ba2a75da-492974167.us-west-2.elb.amazonaws.com   8080:30323/TCP   16m
-```
-
-You need to wait for a few minutes while the Load Balancer is created on AWS and the name resolution in place.
-
-```bash
-until nslookup $(kubectl get svc jenkins --output jsonpath={.status.loadBalancer.ingress[*].hostname})
-do
-  sleep 1
-done
-echo "Open http://$(kubectl get svc jenkins --output jsonpath={.status.loadBalancer.ingress[*].hostname}):8080 to access the Jenkins UI"
-```
-
-Go to the URL displayed to access Jenkins.
-
-Login with the user `admin` and the password `password`.
-
-## 7. Deploy Apache Kafka using KUDO
+## 7. Deploy KUDO Studio - Deploy Zookeeper, Kafka and Workload
 
 The Kubernetes Universal Declarative Operator (KUDO) is a highly productive toolkit for writing operators for Kubernetes. Using KUDO, you can deploy your applications, give your users the tools they need to operate it, and understand how it's behaving in their environments — all without a PhD in Kubernetes.
 
 
 Install the KUDO CLI (on Linux):
 
+CHECK THIS LINK!!!! --------------------------------------------------
 ```bash
-wget https://github.com/kudobuilder/kudo/releases/download/v0.9.0/kubectl-kudo_0.9.0_linux_x86_64
-sudo mv kubectl-kudo_0.9.0_linux_x86_64 /usr/local/bin/kubectl-kudo
+wget https://github.com/kudobuilder/kudo/releases/download/v0.10.0/kubectl-kudo_0.10.0_linux_x86_64
+sudo mv kubectl-kudo_0.10.0_linux_x86_64 /usr/local/bin/kubectl-kudo
 chmod +x /usr/local/bin/kubectl-kudo
 ```
 
@@ -718,7 +634,7 @@ kudo-controller-manager-0   1/1     Running   0          84s
 Deploy ZooKeeper using KUDO:
 
 ```bash
-kubectl kudo install zookeeper --instance=zk
+kubectl kudo install zookeeper
 ```
 
 The output should be similar to:
@@ -731,7 +647,7 @@ instance.kudo.dev/v1beta1/zk created
 Check the status of the deployment:
 
 ```bash
-kubectl kudo plan status --instance=zk
+kubectl kudo plan status --instance=zookeeper-instance
 ```
 
 The output should be similar to:
@@ -755,7 +671,7 @@ Plan(s) for "zk" in namespace "default":
 And check that the corresponding Pods are running:
 
 ```bash
-kubectl get pods | grep zk
+kubectl get pods | grep zook
 ```
 
 The output should be similar to:
@@ -768,13 +684,13 @@ zk-zookeeper-2                         1/1     Running   0          21m
 Deploy Kafka 2.2.1 using KUDO (the version of the KUDO Kafka operator is 0.1.3):
 
 ```bash
-kubectl kudo install kafka --instance=kafka -p ZOOKEEPER_URI=zk-zookeeper-0.zk-hs:2181,zk-zookeeper-1.zk-hs:2181,zk-zookeeper-2.zk-hs:2181 --version=0.1.3
+kubectl kudo install kafka --instance kafka --operator-version 0.1.3
 ```
 
 Check the status of the deployment:
 
 ```bash
-kubectl kudo plan status --instance=kafka
+kubectl kudo plan status --instance kafka
 ```
 
 The output should be similar to:
@@ -804,72 +720,13 @@ kafka-kafka-1                          1/1     Running   0          58s
 kafka-kafka-2                          1/1     Running   0          118s
 ```
 
-Produce messages in Kafka:
+INSTALL KUDO STUDIO
 
-```bash
-cat <<EOF | kubectl create -f -
-apiVersion: apps/v1beta1
-kind: Deployment
-metadata:
-  name: kudo-kafka-generator
-spec:
-  replicas: 1
-  template:
-    metadata:
-      name: kudo-kafka-generator
-      labels:
-        app: kudo-kafka-generator
-    spec:
-      containers:
-      - name: kudo-kafka-generator
-        image: mesosphere/flink-generator:0.1
-        command: ["/generator-linux"]
-        imagePullPolicy: Always
-        args: ["--broker", "kafka-kafka-0.kafka-svc:9092"]
-EOF
-```
-
-Consume messages from Kafka:
-
-```bash
-cat <<EOF | kubectl create -f -
-apiVersion: apps/v1beta1
-kind: Deployment
-metadata:
- name: kudo-kafka-consumer
-spec:
- replicas: 1
- template:
-   metadata:
-     name: kudo-kafka-consumer
-     labels:
-       app: kudo-kafka-consumer
-   spec:
-     containers:
-     - name: kudo-kafka-consumer
-       image: tbaums/kudo-kafka-demo
-       imagePullPolicy: Always
-       env:
-        - name: BROKER_SERVICE
-          value: kafka-kafka-0.kafka-svc:9092
-EOF
-```
-
-Check the logs:
-
-```bash
-kubectl logs $(kubectl get pods -l app=kudo-kafka-consumer -o jsonpath='{.items[0].metadata.name}') --follow
-```
-
-The output should be similar to:
-```bash
-Message: b'2019-11-12T12:23:19Z;3;4;1071'
-Message: b'2019-11-12T12:23:21Z;4;3;3095'
-Message: b'2019-11-12T12:23:22Z;3;7;8639'
-Message: b'2019-11-12T12:23:27Z;9;4;7861'
-Message: b'2019-11-12T12:23:30Z;7;5;3594'
-Message: b'2019-11-12T12:23:33Z;5;0;9985'
-```
+### Deploy Kafka Client API, Svelte front-end, and Node.js Websocket server
+1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-python-api/kafka-client-api.yaml`
+1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/svelte-ui/svelte-client.yaml`
+1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-node-js-api/kafka-node-js-api.yaml`
+1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-dummy-actors/kafka-dummy-actor.yaml`
 
 KUDO is creating CRDs (new objects) in Kubernetes and you can get information about these objects like you can get informations about pods, deployments, ...
 
@@ -902,7 +759,7 @@ zk      33m
 And get information about the KUDO Kafka instance:
 
 ```bash
-kubectl get instances.kudo.dev kafka -o yaml
+kubectl get instances.kudo.dev kafka -o yaml | grep kafka-
 ```
 
 The output should be similar to:
@@ -959,7 +816,7 @@ This is also the approach you take to delete a running instance (`kubectl delete
 Upgrade your Kafka cluster to 2.3.0 (the version of the KUDO Kafka operator is 1.0.0) using the following command:
 
 ```bash
-kubectl kudo upgrade kafka --version=1.0.0 --instance kafka
+kubectl kudo upgrade kafka --operator-version=1.0.0 --instance kafka
 ```
 
 The output should be similar to:
@@ -1162,11 +1019,15 @@ When Kafka operator deployed with parameter `METRICS_ENABLED=true` (which defaul
 - Adds a port named `metrics` to the Kafka Service
 - Adds a label `kubeaddons.mesosphere.io/servicemonitor: "true"` for the service monitor discovery.
 
+
+PROPOSED REMOVAL ---------------------------------------------------------
 Run the following command to enable Kafka metrics export:
 
 ```bash
 kubectl create -f https://raw.githubusercontent.com/kudobuilder/operators/master/repository/kafka/docs/v1.0/resources/service-monitor.yaml
 ```
+END ----------------------------------------------------------------------
+
 
 In the Grafana UI, click on the + sign on the left and select `Import`.
 
@@ -1199,96 +1060,6 @@ Then, search for `redis`:
 ![Kibana Redis](images/kibana-redis.png)
 
 You'll see all the logs related to the redis Pod and Service you deployed previously.
-
-### 10.1. Ingress troubleshooting.
-
-In this section, we will leverage Konvoy logging to troubleshoot Ingress failure issue.
-
-We will deploy a nginx application and expose it via L7 loadbalancer. The application can be accessed with URLs follows below patten.
-
-`http[s]://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath="{.status.loadBalancer.ingress[*].hostname}")/applications/nginx/`
-
-* 1st, let's deploy a nginx application and scale it to 3
-
-```bash
-kubectl run --image=nginx --replicas=3 --port=80 --restart=Always nginx
-```
-* 2nd, expose a in cluster service
-
-```bash
-kubectl expose deploy nginx --port 8080 --target-port 80 --type NodePort --name "svc-nginx"
-```
-* 3rd, create a ingress to expose service via Layer7 LB
-
-```bash
-cat << EOF | kubectl apply -f -
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: nginx-root
-  namespace: default
-spec:
-  rules:
-  - http:
-      paths:
-      - backend:
-          serviceName: svc-nginx
-          servicePort: 8080
-        path:  /applications/nginx/
-EOF
-```
-* 4th, Now check Ingress configure in Traefik
-
-![Traefik nginx](images/trafik_nginx.png)
-
-The `Traefik dashboard` indicates the nginx application is ready to receive traffic but if you try access nginx with URL listed below, you will notice `404 Not Found` error like:
-
-```bash
-curl -k https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath="{.status.loadBalancer.ingress[*].hostname}")/applications/nginx/
-```
-
-Don't forget the trailing slash at the end of the URL. Otherwise, you won't generate a 404 error.
-
-![Traefik nginx](images/trafik_404.png)
-
-Let's troubleshoot this failure with Konvoy Kibana.
-
-![Kibana nginx](images/kibana_nginx.png)
-
-With Konvoy Kibana's near real time log collection and indexing, we can easily identify the ingress traffic was eventually handled by a pod `kubernetes.pod_name:nginx-755464dd6c-dnvp9` in nginx service. The log also gave us more information on the failure, `"GET /applications/nginx/ HTTP/1.1" 404`, which tell us that nginx can't find resource at path `/applications/nginx/`.
-
-That is neat! Because w/o Kibana, you wouldn't know which Pod in our nginx service handles this request. (Our nginx deployment example launched 3 Pods to serve HTTP request) Not mention if there are multiple nginx service exists in the same K8s cluster but hosted at different namespace.
-
-To fix this failure requires some knownledge on Nginx configuration. In general, when nginx is launched with default configuration, it serves a virtual directory on its `ROOT` path `(/)`. When receives HTTP requests, the nginx walk through its virtual directory to return back resources to the client.
-
-In terms of our example, the `Ingress` configuration we submitted to k8s was configured to a path at `/applications/nginx/`. The `traefik` ingress controller sees this `Ingress configuration` and forwards any resource request at path `/applications/nginx/` to the down stream nginx service at the same path. The pod `kubernetes.pod_name:nginx-755464dd6c-dnvp9` received this request but nginx instance in this pod failed to locate any resource under path `/applications/nginx/`. That is the reason we saw this failure, `"GET /applications/nginx/ HTTP/1.1" 404`.  
-
-You can, of course, configure nginx instance to serve resources at path `/applications/nginx/`. But an alternative solution is leverage `traefik` to strip PATH `/applications/nginx/` to `ROOT (/)` before route requests to nginx.
-
-According to `Traefik` documentation [PathPrefixStrip](https://docs.traefik.io/middlewares/stripprefix/), the annotation `(traefik.ingress.kubernetes.io/rule-type)` is exactly what we need to direct traefik to strip ingress HOST PATH to ROOT PATH forementioned.
-
-To update `Ingress`, we can use below command.
-
-```bash
-cat << EOF | kubectl apply -f -
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  annotations:
-    traefik.frontend.rule.type: PathPrefixStrip
-  name: nginx-root
-  namespace: default
-spec:
-  rules:
-  - http:
-      paths:
-      - backend:
-          serviceName: svc-nginx
-          servicePort: 8080
-        path:  /applications/nginx/
-EOF
-```
-![dashboard nginx](images/trafik_nginx_200.png)
 
 ## 11. Upgrade a Konvoy cluster
 
@@ -1442,11 +1213,13 @@ ip-10-0-194-91.us-west-2.compute.internal    Ready    master   81m   v1.15.3
 ip-10-0-195-21.us-west-2.compute.internal    Ready    master   82m   v1.15.3
 ```
 
-Check that the `Jenkins` and the `ebs-dynamic-app` apps are still accessible.
+Check that the `ebs-dynamic-app` apps are still accessible.
 
 The `Redis` and the `http-echo` apps aren't running anymore as they haven't been deployed using a `deployment`.
 
 ## 12. Destroy a Konvoy cluster
+
+### ... Don't do this if we aren't finished : )
 
 When you run konvoy down, the command removes all of the AWS infrastructure resources create for the cluster, including any volumes that are backing PersistentVolumesClaims with a Delete ReclaimPolicy.
 
@@ -1460,6 +1233,95 @@ The konvoy down command then begins removing cluster resources by deleting load 
 
 After konvoy down removes these resources, it uses Terraform to delete the resources created by the konvoy up command and Terraform provisioning.
 
+## Appendix 0. Ingress troubleshooting.
+
+In this section, we will leverage Konvoy logging to troubleshoot Ingress failure issue.
+
+We will deploy a nginx application and expose it via L7 loadbalancer. The application can be accessed with URLs follows below patten.
+
+`http[s]://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath="{.status.loadBalancer.ingress[*].hostname}")/applications/nginx/`
+
+* 1st, let's deploy a nginx application and scale it to 3
+
+```bash
+kubectl run --image=nginx --replicas=3 --port=80 --restart=Always nginx
+```
+* 2nd, expose a in cluster service
+
+```bash
+kubectl expose deploy nginx --port 8080 --target-port 80 --type NodePort --name "svc-nginx"
+```
+* 3rd, create a ingress to expose service via Layer7 LB
+
+```bash
+cat << EOF | kubectl apply -f -
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-root
+  namespace: default
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: svc-nginx
+          servicePort: 8080
+        path:  /applications/nginx/
+EOF
+```
+* 4th, Now check Ingress configure in Traefik
+
+![Traefik nginx](images/trafik_nginx.png)
+
+The `Traefik dashboard` indicates the nginx application is ready to receive traffic but if you try access nginx with URL listed below, you will notice `404 Not Found` error like:
+
+```bash
+curl -k https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath="{.status.loadBalancer.ingress[*].hostname}")/applications/nginx/
+```
+
+Don't forget the trailing slash at the end of the URL. Otherwise, you won't generate a 404 error.
+
+![Traefik nginx](images/trafik_404.png)
+
+Let's troubleshoot this failure with Konvoy Kibana.
+
+![Kibana nginx](images/kibana_nginx.png)
+
+With Konvoy Kibana's near real time log collection and indexing, we can easily identify the ingress traffic was eventually handled by a pod `kubernetes.pod_name:nginx-755464dd6c-dnvp9` in nginx service. The log also gave us more information on the failure, `"GET /applications/nginx/ HTTP/1.1" 404`, which tell us that nginx can't find resource at path `/applications/nginx/`.
+
+That is neat! Because w/o Kibana, you wouldn't know which Pod in our nginx service handles this request. (Our nginx deployment example launched 3 Pods to serve HTTP request) Not mention if there are multiple nginx service exists in the same K8s cluster but hosted at different namespace.
+
+To fix this failure requires some knownledge on Nginx configuration. In general, when nginx is launched with default configuration, it serves a virtual directory on its `ROOT` path `(/)`. When receives HTTP requests, the nginx walk through its virtual directory to return back resources to the client.
+
+In terms of our example, the `Ingress` configuration we submitted to k8s was configured to a path at `/applications/nginx/`. The `traefik` ingress controller sees this `Ingress configuration` and forwards any resource request at path `/applications/nginx/` to the down stream nginx service at the same path. The pod `kubernetes.pod_name:nginx-755464dd6c-dnvp9` received this request but nginx instance in this pod failed to locate any resource under path `/applications/nginx/`. That is the reason we saw this failure, `"GET /applications/nginx/ HTTP/1.1" 404`.  
+
+You can, of course, configure nginx instance to serve resources at path `/applications/nginx/`. But an alternative solution is leverage `traefik` to strip PATH `/applications/nginx/` to `ROOT (/)` before route requests to nginx.
+
+According to `Traefik` documentation [PathPrefixStrip](https://docs.traefik.io/middlewares/stripprefix/), the annotation `(traefik.ingress.kubernetes.io/rule-type)` is exactly what we need to direct traefik to strip ingress HOST PATH to ROOT PATH forementioned.
+
+To update `Ingress`, we can use below command.
+
+```bash
+cat << EOF | kubectl apply -f -
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    traefik.frontend.rule.type: PathPrefixStrip
+  name: nginx-root
+  namespace: default
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: svc-nginx
+          servicePort: 8080
+        path:  /applications/nginx/
+EOF
+```
+![dashboard nginx](images/trafik_nginx_200.png)
 
 ## Appendix 1. Setting up an external identity provider
 
@@ -1547,3 +1409,90 @@ Run the following command to check that you can administer the Kubernetes cluste
 ```bash
 kubectl get nodes
 ```
+
+## Appendix 6. Deploy Jenkins using Helm
+
+Helm is a tool for managing Kubernetes charts. Charts are packages of pre-configured Kubernetes resources.
+
+You can find many charts on the [Helm Hub](https://hub.helm.sh/).
+
+In this lab, we'll deploy the [Jenkins Helm chart](https://hub.helm.sh/charts/stable/jenkins).
+
+To deploy the chart, you need to run the following command:
+
+```bash
+helm install stable/jenkins --name jenkins --version 1.5.0 --set master.adminPassword=password
+```
+
+The output should be similar to:
+```bash
+NAME:   jenkins
+LAST DEPLOYED: Wed Aug  7 17:21:32 2019
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/ConfigMap
+NAME           DATA  AGE
+jenkins        5     1s
+jenkins-tests  1     1s
+
+==> v1/Deployment
+NAME     READY  UP-TO-DATE  AVAILABLE  AGE
+jenkins  0/1    1           0          1s
+
+==> v1/PersistentVolumeClaim
+NAME     STATUS   VOLUME                CAPACITY  ACCESS MODES  STORAGECLASS  AGE
+jenkins  Pending  awsebscsiprovisioner  1s
+
+==> v1/Pod(related)
+NAME                     READY  STATUS   RESTARTS  AGE
+jenkins-c79f457cb-ccttb  0/1    Pending  0         1s
+
+==> v1/Role
+NAME                     AGE
+jenkins-schedule-agents  1s
+
+==> v1/RoleBinding
+NAME                     AGE
+jenkins-schedule-agents  1s
+
+==> v1/Secret
+NAME     TYPE    DATA  AGE
+jenkins  Opaque  2     1s
+
+==> v1/Service
+NAME           TYPE          CLUSTER-IP  EXTERNAL-IP  PORT(S)         AGE
+jenkins        LoadBalancer  10.0.9.26   <pending>    8080:30323/TCP  1s
+jenkins-agent  ClusterIP     10.0.41.64  <none>       50000/TCP       1s
+
+==> v1/ServiceAccount
+NAME     SECRETS  AGE
+jenkins  1        1s
+```
+
+Then, run the following command to get the URL of the Load Balancer created on AWS for this service:
+
+```bash
+kubectl get svc jenkins
+```
+
+The output should be similar to:
+```bash
+NAME      TYPE           CLUSTER-IP   EXTERNAL-IP                                                              PORT(S)          AGE
+jenkins   LoadBalancer   10.0.9.26    a71b8025991124a90b2babf7ba2a75da-492974167.us-west-2.elb.amazonaws.com   8080:30323/TCP   16m
+```
+
+You need to wait for a few minutes while the Load Balancer is created on AWS and the name resolution in place.
+
+```bash
+until nslookup $(kubectl get svc jenkins --output jsonpath={.status.loadBalancer.ingress[*].hostname})
+do
+  sleep 1
+done
+echo "Open http://$(kubectl get svc jenkins --output jsonpath={.status.loadBalancer.ingress[*].hostname}):8080 to access the Jenkins UI"
+```
+
+Go to the URL displayed to access Jenkins.
+
+Login with the user `admin` and the password `password`.
