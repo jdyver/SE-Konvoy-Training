@@ -76,7 +76,7 @@ cd ~/lab
 
 Deploy your cluster using the command below:
 
-```bash
+```
 konvoy up --yes
 ```
 
@@ -137,7 +137,7 @@ konvoy deploy addons --yes
 As soon as your cluster is successfully deployed, the URL and the credentials to access your cluster are displayed. When you lauch your dashboard URL in your browser the first screen will ask you to select "login or generate token", select login and use the credentials provided.
 
 If you need to get this information later, you can execute the command below:
-```bash
+```
 konvoy get ops-portal
 ```
 
@@ -155,11 +155,11 @@ konvoy apply kubeconfig
 
 You can check that the Kubernetes cluster has been deployed using the version `1.15.2` with 3 control nodes and 5 workers nodes
 
-```bash
+```
 kubectl get nodes
 ```
 The output should be similar to:
-```bash
+```
 NAME                                         STATUS   ROLES    AGE   VERSION
 ip-10-0-128-64.us-west-2.compute.internal    Ready    <none>   10m   v1.15.2
 ip-10-0-129-247.us-west-2.compute.internal   Ready    <none>   10m   v1.15.2
@@ -182,7 +182,7 @@ Exposing your application on a kubernetes cluster in an Enterprise-grade environ
 
 Deploy a redis Pod on your Kubernetes cluster running the following command:
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Pod
@@ -203,7 +203,7 @@ EOF
 
 Then, expose the service, you need to run the following command to create a Service Type Load Balancer:
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Service
@@ -224,20 +224,20 @@ EOF
 
 Finally, run the following command to see the URL of the Load Balancer created on AWS for this service:
 
-```bash
+```
 kubectl get svc redis
 ```
 
 The output should be similar to:
 
-```bash
+```
 NAME    TYPE           CLUSTER-IP   EXTERNAL-IP                                                               PORT(S)          AGE
 redis   LoadBalancer   10.0.51.32   a92b6c9216ccc11e982140acb7ee21b7-1453813785.us-west-2.elb.amazonaws.com   6379:31423/TCP   43s
 ```
 
 You need to wait for a few minutes while the Load Balancer is created on AWS and the name resolution in place.
 
-```bash
+```
 until nslookup $(kubectl get svc redis --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 do
   sleep 1
@@ -246,12 +246,12 @@ done
 
 You can validate that you can access the redis Pod from your laptop using telnet:
 
-```bash
+```
 telnet $(kubectl get svc redis --output jsonpath={.status.loadBalancer.ingress[*].hostname}) 6379
 ```
 
 The output should be similar to:
-```bash
+```
 Trying 52.27.218.48...
 Connected to a92b6c9216ccc11e982140acb7ee21b7-1453813785.us-west-2.elb.amazonaws.com.
 Escape character is '^]'.
@@ -266,21 +266,21 @@ If you don't have `telnet` installed in your machine, you can use `nc` instead.
 
 Deploy 2 web application Pods on your Kubernetes cluster running the following command:
 
-```bash
+```
 kubectl run --restart=Never --image hashicorp/http-echo --labels app=http-echo-1 --port 80 http-echo-1 -- -listen=:80 --text="Hello from http-echo-1"
 kubectl run --restart=Never --image hashicorp/http-echo --labels app=http-echo-2 --port 80 http-echo-2 -- -listen=:80 --text="Hello from http-echo-2"
 ```
 
 Then, expose the Pods with a Service Type NodePort using the following commands:
 
-```bash
+```
 kubectl expose pod http-echo-1 --port 80 --target-port 80 --type NodePort --name "http-echo-1"
 kubectl expose pod http-echo-2 --port 80 --target-port 80 --type NodePort --name "http-echo-2"
 ```
 
 Finally create the Ingress to expose the application to the outside world using the following command:
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -309,19 +309,19 @@ Go to the Traefik UI to check that new frontends have been created.
 
 Finally, run the following command to see the URL of the Load Balancer created on AWS for the Traefik service:
 
-```bash
+```
 kubectl get svc traefik-kubeaddons -n kubeaddons
 ```
 
 The output should be similar to:
-```bash
+```
 NAME                 TYPE           CLUSTER-IP    EXTERNAL-IP                                                             PORT(S)                                     AGE
 traefik-kubeaddons   LoadBalancer   10.0.24.215   abf2e5bda6ca811e982140acb7ee21b7-37522315.us-west-2.elb.amazonaws.com   80:31169/TCP,443:32297/TCP,8080:31923/TCP   4h22m
 ```
 
 You can validate that you can access the web application Pods from your laptop using the following commands:
 
-```bash
+```
 curl -k -H "Host: http-echo-1.com" https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 curl -k -H "Host: http-echo-2.com" https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 ```
@@ -347,7 +347,7 @@ In this lab, we restrict access to ingresses, so you may think that it's useless
 
 Create a network policy to deny any ingress
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -362,18 +362,18 @@ EOF
 
 Wait for a minute to allow the network policy to be activated and check that the Redis and the http-echo apps aren't accessible anymore
 
-```bash
+```
 telnet $(kubectl get svc redis --output jsonpath={.status.loadBalancer.ingress[*].hostname}) 6379
 ```
 
-```bash
+```
 curl -k -H "Host: http-echo-1.com" https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 curl -k -H "Host: http-echo-2.com" https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 ```
 
 Create network policies to allow ingress access to these apps only
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
@@ -416,18 +416,18 @@ EOF
 
 Wait for a minute and check that the Redis and the http-echo apps are now accessible
 
-```bash
+```
 telnet $(kubectl get svc redis --output jsonpath={.status.loadBalancer.ingress[*].hostname}) 6379
 ```
 
-```bash
+```
 curl -k -H "Host: http-echo-1.com" https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 curl -k -H "Host: http-echo-2.com" https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 ```
 
 Delete the network policy that denies any ingress
 
-```bash
+```
 cat <<EOF | kubectl delete -f -
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -459,7 +459,7 @@ kubectl get sc awsebscsiprovisioner -o yaml
 ```
 
 The output should be similar to:
-```bash
+```
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -480,7 +480,7 @@ volumeBindingMode: WaitForFirstConsumer
 
 Create the Kubernetes PersistentVolumeClaim using the following command:
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -498,12 +498,12 @@ EOF
 
 Run the following command to check the status of the `PersistentVolumeClaim`:
 
-```bash
+```
 kubectl describe pvc dynamic
 ```
 
 The output should be similar to:
-```bash
+```
 Name:          dynamic
 Namespace:     default
 StorageClass:  awsebscsiprovisioner
@@ -526,7 +526,7 @@ As you can see, it is waiting for a `Pod` to use it to provision the AWS EBS vol
 
 Create a Kubernetes Deployment that will use this `PersistentVolumeClaim` using the following command:
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -561,20 +561,20 @@ EOF
 
 Run the following command until the pod is running:
 
-```bash
+```
 kubectl get pods
 ```
 
 Check the content of the file `/data/out.txt` and note the first timestamp:
 
-```bash
+```
 pod=$(kubectl get pods | grep ebs-dynamic-app | awk '{ print $1 }')
 kubectl exec -i $pod cat /data/out.txt
 ```
 
 Delete the Pod using the following command (it will take some time to complete):
 
-```bash
+```
 kubectl delete pod $pod
 ```
 
@@ -582,13 +582,13 @@ The Deployment will recreate the pod automatically.
 
 Run the following command until the pod is running:
 
-```bash
+```
 kubectl get pods
 ```
 
 Check the content of the file `/data/out.txt` and verify that the first timestamp is the same as the one noted previously:
 
-```bash
+```
 pod=$(kubectl get pods | grep ebs-dynamic-app | awk '{ print $1 }')
 kubectl exec -i $pod cat /data/out.txt
 ```
@@ -601,7 +601,7 @@ The Kubernetes Universal Declarative Operator (KUDO) is a highly productive tool
 Install the KUDO CLI (on Linux):
 
 CHECK THIS LINK!!!! --------------------------------------------------
-```bash
+```
 wget https://github.com/kudobuilder/kudo/releases/download/v0.10.0/kubectl-kudo_0.10.0_linux_x86_64
 sudo mv kubectl-kudo_0.10.0_linux_x86_64 /usr/local/bin/kubectl-kudo
 chmod +x /usr/local/bin/kubectl-kudo
@@ -609,36 +609,36 @@ chmod +x /usr/local/bin/kubectl-kudo
 
 Run the following commands to deploy KUDO on your Kubernetes cluster:
 
-```bash
+```
 kubectl kudo init
 ```
 
 The output should be similar to:
-```bash
+```
 
 $KUDO_HOME has been configured at /home/centos/.kudo.
 ```
 
 Check the status of the KUDO controller:
 
-```bash
+```
 kubectl get pods -n kudo-system
 ```
 
 The output should be similar to:
-```bash
+```
 NAME                        READY   STATUS    RESTARTS   AGE
 kudo-controller-manager-0   1/1     Running   0          84s
 ```
 
 Deploy ZooKeeper using KUDO:
 
-```bash
+```
 kubectl kudo install zookeeper
 ```
 
 The output should be similar to:
-```bash
+```
 operator.kudo.dev/v1beta1/zookeeper created
 operatorversion.kudo.dev/v1beta1/zookeeper-0.2.0 created
 instance.kudo.dev/v1beta1/zk created
@@ -646,12 +646,12 @@ instance.kudo.dev/v1beta1/zk created
 
 Check the status of the deployment:
 
-```bash
+```
 kubectl kudo plan status --instance=zookeeper-instance
 ```
 
 The output should be similar to:
-```bash
+```
 Plan(s) for "zk" in namespace "default":
 .
 └── zk (Operator-Version: "zookeeper-0.2.0" Active-Plan: "deploy")
@@ -670,12 +670,12 @@ Plan(s) for "zk" in namespace "default":
 
 And check that the corresponding Pods are running:
 
-```bash
+```
 kubectl get pods | grep zook
 ```
 
 The output should be similar to:
-```bash
+```
 zk-zookeeper-0                         1/1     Running   0          21m
 zk-zookeeper-1                         1/1     Running   0          21m
 zk-zookeeper-2                         1/1     Running   0          21m
@@ -683,18 +683,18 @@ zk-zookeeper-2                         1/1     Running   0          21m
 
 Deploy Kafka 2.2.1 using KUDO (the version of the KUDO Kafka operator is 0.1.3):
 
-```bash
+```
 kubectl kudo install kafka --instance kafka --operator-version 0.1.3
 ```
 
 Check the status of the deployment:
 
-```bash
+```
 kubectl kudo plan status --instance kafka
 ```
 
 The output should be similar to:
-```bash
+```
 Plan(s) for "kafka" in namespace "default":
 .
 └── kafka (Operator-Version: "kafka-0.1.3" Active-Plan: "deploy")
@@ -709,18 +709,18 @@ Plan(s) for "kafka" in namespace "default":
 
 And check that the corresponding Pods are running:
 
-```bash
+```
 kubectl get pods | grep kafka
 ```
 
 The output should be similar to:
-```bash
+```
 kafka-kafka-0                          1/1     Running   0          39s
 kafka-kafka-1                          1/1     Running   0          58s
 kafka-kafka-2                          1/1     Running   0          118s
 ```
 
-INSTALL KUDO STUDIO
+## Run KUDO Studio
 
 ### Deploy Kafka Client API, Svelte front-end, and Node.js Websocket server
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-python-api/kafka-client-api.yaml`
@@ -728,16 +728,43 @@ INSTALL KUDO STUDIO
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-node-js-api/kafka-node-js-api.yaml`
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-dummy-actors/kafka-dummy-actor.yaml`
 
+### Navigate to Svelte UI
+1. Visit \<your AWS elb\>/svelte
+
+### Begin demonstration
+
+#### Manufacturing and IoT example
+1. Click 'Manufactoring & IoT' in the Nav bar
+1. Explain demo architecture
+1. Click '-' button to collapse architecture diagram
+1. Click button 'Click me to start fetch'
+1. Run `kubectl scale deploy kafka-dummy-actor --replicas=1`
+1. Observe a single actor on the map (left) and in the actor list (on right).
+1. Run `kubectl scale deploy kafka-dummy-actor --replicas=7` to see the list fill in real-time and observe the actors moving around the map.
+
+#### User Research example
+
+1. Click 'User Research' in the Nav bar
+1. Explain demo architecture
+1. Click '-' button to collapse architecture diagram
+1. Open browser 'Network' panel and reload the page. (Right click on the page, and select "Inspect Element". Then, select the 'Network' panel tab. Reload the page to start capturing network traffic.)
+1. Move mouse across left-hand screenshot
+1. Explain that each mouse movement captured by the browser is posted directly to the Python Kafka API server, via an endpoint exposed through Traefik
+1. Observe Node.js Kafka API reading from Kafka queue and returning the mouse movements in the right-hand screenshot
+1. Observe POST request duration (should be ~500ms)
+
+## 9. KUDO Management
+
 KUDO is creating CRDs (new objects) in Kubernetes and you can get information about these objects like you can get informations about pods, deployments, ...
 
 Run this command to get the list of CRDs created by KUDO:
 
-```bash
+```
 kubectl get crds | grep kudo
 ```
 
 The output should be similar to:
-```bash
+```
 instances.kudo.dev                               2019-11-12T12:16:19Z
 operators.kudo.dev                               2019-11-12T12:16:19Z
 operatorversions.kudo.dev                        2019-11-12T12:16:19Z
@@ -745,93 +772,50 @@ operatorversions.kudo.dev                        2019-11-12T12:16:19Z
 
 Now list the KUDO instances running using the following command:
 
-```bash
+```
 kubectl get instances.kudo.dev
 ```
 
 The output should be similar to:
-```bash
-NAME    AGE
-kafka   18m
-zk      33m
+```
+NAME                 AGE
+kafka                22m
+zookeeper-instance   29m
 ```
 
 And get information about the KUDO Kafka instance:
 
-```bash
-kubectl get instances.kudo.dev kafka -o yaml | grep kafka-
+```
+kubectl get instances kafka -o yaml | grep kafka-
 ```
 
 The output should be similar to:
-```bash
-apiVersion: kudo.dev/v1beta1
-kind: Instance
-metadata:
-  annotations:
-    kudo.dev/last-applied-instance-state: '{"operatorVersion":{"name":"kafka-0.1.3"},"parameters":{"ZOOKEEPER_URI":"zk-zookeeper-0.zk-hs:2181,zk-zookeeper-1.zk-hs:2181,zk-zookeeper-2.zk-hs:2181"}}'
-  creationTimestamp: "2019-11-12T12:46:39Z"
-  generation: 3
-  labels:
-    controller-tools.k8s.io: "1.0"
-    kudo.dev/operator: kafka
-  name: kafka
-  namespace: default
-  resourceVersion: "81847"
-  selfLink: /apis/kudo.dev/v1beta1/namespaces/default/instances/kafka
-  uid: 6f289e56-86e7-40d2-8360-f8255678a801
-spec:
-  operatorVersion:
+```
+    kudo.dev/last-applied-instance-state: '{"operatorVersion":{"name":"kafka-0.1.3"}}'
     name: kafka-0.1.3
-  parameters:
-    ZOOKEEPER_URI: zk-zookeeper-0.zk-hs:2181,zk-zookeeper-1.zk-hs:2181,zk-zookeeper-2.zk-hs:2181
-status:
-  aggregatedStatus:
-    status: COMPLETE
-  planStatus:
-    deploy:
-      lastFinishedRun: "2019-11-12T12:47:57Z"
-      name: deploy
-      phases:
-      - name: deploy-kafka
-        status: COMPLETE
-        steps:
-        - name: deploy
-          status: COMPLETE
-      status: COMPLETE
-      uid: e0ba11bf-d2d5-467b-b96c-c443aa0ba5ef
-    not-allowed:
-      lastFinishedRun: null
-      name: not-allowed
-      phases:
-      - name: not-allowed
-        status: NEVER_RUN
-        steps:
-        - name: not-allowed
-          status: NEVER_RUN
-      status: NEVER_RUN
 ```
 
 This is also the approach you take to delete a running instance (`kubectl delete instances.kudo.dev kafka`), but you can keep it running.
 
 Upgrade your Kafka cluster to 2.3.0 (the version of the KUDO Kafka operator is 1.0.0) using the following command:
 
-```bash
+```
 kubectl kudo upgrade kafka --operator-version=1.0.0 --instance kafka
 ```
 
 The output should be similar to:
-```bash
+```
 instance./kafka updated
 ```
 
 Check the status of the upgrade:
 
-```bash
+```
 kubectl kudo plan status --instance=kafka
 ```
 
 The output should be similar to:
-```bash
+```
 Plan(s) for "kafka" in namespace "default":
 .
 └── kafka (Operator-Version: "kafka-1.0.0" Active-Plan: "deploy")
@@ -846,12 +830,12 @@ Plan(s) for "kafka" in namespace "default":
 
 And get information about the upgraded KUDO Kafka instance:
 
-```bash
+```
 kubectl get instances.kudo.dev kafka -o yaml
 ```
 
 The output should be similar to:
-```bash
+```
 apiVersion: kudo.dev/v1beta1
 kind: Instance
 metadata:
@@ -901,12 +885,12 @@ status:
 
 And check that the corresponding Pods have been replaced:
 
-```bash
+```
 kubectl get pods | grep kafka
 ```
 
 The output should be similar to:
-```bash
+```
 kafka-kafka-0                          1/1     Running   0          77s
 kafka-kafka-1                          1/1     Running   0          100s
 kafka-kafka-2                          1/1     Running   0          2m20s
@@ -916,25 +900,38 @@ kudo-kafka-generator-d655d6dff-5pztl   1/1     Running   0          28m
 
 You can also easily update the configuration of your Kafka cluster.
 
-For example, you can add more brokers using the command below.
+### 8. Scalability up and down the stack
 
-```bash
+#### Demonstrate the power of application horizontal scaling
+
+To demonstrate the power of granular microservice scaling, first we need to generate more load on the Python Kafka API. We will then observe POST request times increase. Lastly, we will scale the Python Kafka API and observe POST request times return to normal.
+
+From User Research screen (assumes above demo steps completed):
+1. `kubectl scale deploy kafka-dummy-actor --replicas=70`
+1. Move mouse across left-hand panel
+1. Observe POST request duration in browser's Network panel (should be >1000ms)
+1. `kubectl scale deploy kafka-client-api --replicas=5`
+1. Observe POST request duration (should return to ~500ms)
+
+#### For example, you can add more brokers using the command below.
+
+```
 kubectl kudo update --instance kafka -p BROKER_COUNT=5
 ```
 
 The output should be similar to:
-```bash
+```
 Instance kafka was updated.
 ```
 
 Check the status of the upgrade:
 
-```bash
+```
 kubectl kudo plan status --instance=kafka
 ```
 
 The output should be similar to:
-```bash
+```
 Plan(s) for "kafka" in namespace "default":
 .
 └── kafka (Operator-Version: "kafka-1.0.0" Active-Plan: "deploy")
@@ -949,12 +946,12 @@ Plan(s) for "kafka" in namespace "default":
 
 And check that the corresponding Pods are running:
 
-```bash
+```
 kubectl get pods | grep kafka
 ```
 
 The output should be similar to:
-```bash
+```
 kafka-kafka-0                          1/1     Running   0          70s
 kafka-kafka-1                          1/1     Running   0          102s
 kafka-kafka-2                          1/1     Running   0          2m35s
@@ -964,7 +961,7 @@ kudo-kafka-consumer-6b4dd5cd59-r7svb   1/1     Running   0          33m
 kudo-kafka-generator-d655d6dff-5pztl   1/1     Running   0          33m
 ```
 
-## 8. Scale a Konvoy cluster
+### Scale Konvoy cluster nodes
 
 Edit the `cluster.yaml` file to change the worker count from 5 to 6:
 ```
@@ -984,7 +981,7 @@ kubectl get nodes
 ```
 
 The output should be similar to:
-```bash
+```
 NAME                                         STATUS   ROLES    AGE    VERSION
 ip-10-0-128-127.us-west-2.compute.internal   Ready    <none>   45m    v1.15.2
 ip-10-0-129-21.us-west-2.compute.internal    Ready    <none>   45m    v1.15.2
@@ -1023,7 +1020,7 @@ When Kafka operator deployed with parameter `METRICS_ENABLED=true` (which defaul
 PROPOSED REMOVAL ---------------------------------------------------------
 Run the following command to enable Kafka metrics export:
 
-```bash
+```
 kubectl create -f https://raw.githubusercontent.com/kudobuilder/operators/master/repository/kafka/docs/v1.0/resources/service-monitor.yaml
 ```
 END ----------------------------------------------------------------------
@@ -1076,12 +1073,12 @@ spec:
 ...
 ```
 
-```bash
+```
 konvoy up --yes --upgrade --force-upgrade
 ```
 
 The output should be similar to:
-```bash
+```
 This process will take about 15 minutes to complete (additional time may be required for larger clusters)
 
 STAGE [Provisioning Infrastructure]
@@ -1195,12 +1192,12 @@ Without the `--force-upgrade` flag, the Kubernetes nodes that have under replica
 
 Check the version of Kubernetes:
 
-```bash
+```
 kubectl get nodes
 ```
 
 The output should be similar to:
-```bash
+```
 NAME                                         STATUS   ROLES    AGE   VERSION
 ip-10-0-128-127.us-west-2.compute.internal   Ready    <none>   80m   v1.15.3
 ip-10-0-129-21.us-west-2.compute.internal    Ready    <none>   80m   v1.15.3
@@ -1243,17 +1240,17 @@ We will deploy a nginx application and expose it via L7 loadbalancer. The applic
 
 * 1st, let's deploy a nginx application and scale it to 3
 
-```bash
+```
 kubectl run --image=nginx --replicas=3 --port=80 --restart=Always nginx
 ```
 * 2nd, expose a in cluster service
 
-```bash
+```
 kubectl expose deploy nginx --port 8080 --target-port 80 --type NodePort --name "svc-nginx"
 ```
 * 3rd, create a ingress to expose service via Layer7 LB
 
-```bash
+```
 cat << EOF | kubectl apply -f -
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -1276,7 +1273,7 @@ EOF
 
 The `Traefik dashboard` indicates the nginx application is ready to receive traffic but if you try access nginx with URL listed below, you will notice `404 Not Found` error like:
 
-```bash
+```
 curl -k https://$(kubectl get svc traefik-kubeaddons -n kubeaddons --output jsonpath="{.status.loadBalancer.ingress[*].hostname}")/applications/nginx/
 ```
 
@@ -1302,7 +1299,7 @@ According to `Traefik` documentation [PathPrefixStrip](https://docs.traefik.io/m
 
 To update `Ingress`, we can use below command.
 
-```bash
+```
 cat << EOF | kubectl apply -f -
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -1353,7 +1350,7 @@ Save the configuration and note down the client ID and the client secret.
 
 Run the following command (after inserting your email address) to provide admin rights to your Google account:
 
-```bash
+```
 cat <<EOF | kubectl create -f -
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -1398,7 +1395,7 @@ When the update is finished, Go to `https://<public-cluster-dns-name>/token` and
 
 Follow the instructions in the page, but use the command below in the second step to get the right value for the `server` parameter:
 
-```bash
+```
 kubectl config set-cluster kubernetes-cluster \
     --certificate-authority=${HOME}/.kube/certs/kubernetes-cluster/k8s-ca.crt \
     --server=$(kubectl config view | grep server | awk '{ print $2 }')
@@ -1406,7 +1403,7 @@ kubectl config set-cluster kubernetes-cluster \
 
 Run the following command to check that you can administer the Kubernetes cluster with your Google account:
 
-```bash
+```
 kubectl get nodes
 ```
 
@@ -1420,12 +1417,12 @@ In this lab, we'll deploy the [Jenkins Helm chart](https://hub.helm.sh/charts/st
 
 To deploy the chart, you need to run the following command:
 
-```bash
+```
 helm install stable/jenkins --name jenkins --version 1.5.0 --set master.adminPassword=password
 ```
 
 The output should be similar to:
-```bash
+```
 NAME:   jenkins
 LAST DEPLOYED: Wed Aug  7 17:21:32 2019
 NAMESPACE: default
@@ -1473,19 +1470,19 @@ jenkins  1        1s
 
 Then, run the following command to get the URL of the Load Balancer created on AWS for this service:
 
-```bash
+```
 kubectl get svc jenkins
 ```
 
 The output should be similar to:
-```bash
+```
 NAME      TYPE           CLUSTER-IP   EXTERNAL-IP                                                              PORT(S)          AGE
 jenkins   LoadBalancer   10.0.9.26    a71b8025991124a90b2babf7ba2a75da-492974167.us-west-2.elb.amazonaws.com   8080:30323/TCP   16m
 ```
 
 You need to wait for a few minutes while the Load Balancer is created on AWS and the name resolution in place.
 
-```bash
+```
 until nslookup $(kubectl get svc jenkins --output jsonpath={.status.loadBalancer.ingress[*].hostname})
 do
   sleep 1
