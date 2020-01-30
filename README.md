@@ -602,8 +602,8 @@ Install the KUDO CLI (on Linux):
 
 CHECK THIS LINK!!!! --------------------------------------------------
 ```
-wget https://github.com/kudobuilder/kudo/releases/download/v0.10.0/kubectl-kudo_0.10.0_linux_x86_64
-sudo mv kubectl-kudo_0.10.0_linux_x86_64 /usr/local/bin/kubectl-kudo
+wget https://github.com/kudobuilder/kudo/releases/download/v0.10.0/kubectl-kudo_0.9.0_linux_x86_64
+sudo mv kubectl-kudo_0.9.0_linux_x86_64 /usr/local/bin/kubectl-kudo
 chmod +x /usr/local/bin/kubectl-kudo
 ```
 
