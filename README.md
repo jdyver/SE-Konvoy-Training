@@ -603,7 +603,7 @@ The Kubernetes Universal Declarative Operator (KUDO) is a highly productive tool
 Install the KUDO CLI (on Linux):
 
 ```
-wget https://github.com/kudobuilder/kudo/releases/download/v0.10.0/kubectl-kudo_0.9.0_linux_x86_64
+wget https://github.com/kudobuilder/kudo/releases/download/v0.9.0/kubectl-kudo_0.9.0_linux_x86_64
 sudo mv kubectl-kudo_0.9.0_linux_x86_64 /usr/local/bin/kubectl-kudo
 chmod +x /usr/local/bin/kubectl-kudo
 ```
