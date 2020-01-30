@@ -15,14 +15,16 @@ During this training, you'll learn how to deploy Konvoy and to use its main feat
 * [4. Leverage Network Policies to restrict access](#4-leverage-network-policies-to-restrict-access)
 * [5. Leverage persistent storage using CSI](#5-leverage-persistent-storage-using-csi)
 * [6. Deploy KUDO Studio - Deploy Zookeeper, Kafka and Workload](#6-deploy-kudo-studio---deploy-zookeeper-kafka-and-workload)
-* [7. Deploy Apache Kafka using KUDO](#7-deploy-apache-kafka-using-kudo)
-* [8. Scale a Konvoy cluster](#8-scale-a-konvoy-cluster)
-* [9. Konvoy monitoring](#9-konvoy-monitoring)
-* [10. Konvoy logging/debugging](#10-konvoy-loggingdebugging)
-* [11. Upgrade a Konvoy cluster](#11-upgrade-a-konvoy-cluster)
-* [12. Destroy a Konvoy cluster](#12-destroy-a-konvoy-cluster)
-* [Appendix 1. Setting up an external identity provider](#appendix-1-setting-up-an-external-identity-provider)
-* [Appendix 6. Deploy Jenkins using Helm](#appendix-6-deploy-jenkins-using-helm)
+* [7. Run KUDO Kafka application](#7-run-an-application-kudo-studio)
+* [8. KUDO Operations](#8-kudo-operator-management)
+* [9. Scalability up and down the stack](#9-scalability-up-and-down-the-stack)
+* [10. Konvoy monitoring](#10-konvoy-monitoring)
+* [11. Konvoy logging/debugging](#11-konvoy-loggingdebugging)
+* [12. Upgrade Kubernetes with Konvoy](#12-upgrade-a-konvoy-cluster)
+* [12. Destroy a Konvoy cluster](#13-destroy-a-konvoy-cluster)
+* [Appendix 1. Setting up an external identity provider](#appendix-1-ingress-troubleshooting)
+* [Appendix 1. Setting up an external identity provider](#appendix-2-setting-up-an-external-identity-provider)
+* [Appendix 6. Deploy Jenkins using Helm](#appendix-3-deploy-jenkins-using-helm)
 
 
 ## Prerequisites
@@ -600,7 +602,6 @@ The Kubernetes Universal Declarative Operator (KUDO) is a highly productive tool
 
 Install the KUDO CLI (on Linux):
 
-CHECK THIS LINK!!!! --------------------------------------------------
 ```
 wget https://github.com/kudobuilder/kudo/releases/download/v0.10.0/kubectl-kudo_0.9.0_linux_x86_64
 sudo mv kubectl-kudo_0.9.0_linux_x86_64 /usr/local/bin/kubectl-kudo
@@ -695,7 +696,7 @@ zk-zookeeper-2                         1/1     Running   0          21m
 Note the version of the KUDO Kafka operator is 0.1.3.
 
 ```
-kubectl kudo install kafka --instance kafka --operator-version 0.1.3
+kubectl kudo install kafka --instance kafka --version 0.1.3
 ```
 
 #### KUDO - Kafka operator status
@@ -816,7 +817,7 @@ This is also the approach you take to delete a running instance (`kubectl delete
 Upgrade your Kafka cluster to 2.3.0 (the version of the KUDO Kafka operator is 1.0.0) using the following command:
 
 ```
-kubectl kudo upgrade kafka --operator-version=1.0.0 --instance kafka
+kubectl kudo upgrade kafka --version=1.0.0 --instance kafka
 ```
 
 The output should be similar to:
