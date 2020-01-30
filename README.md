@@ -14,7 +14,7 @@ During this training, you'll learn how to deploy Konvoy and to use its main feat
 * [3. Expose a Kubernetes Application using an Ingress (L7)](#3-expose-a-kubernetes-application-using-an-ingress-l7)
 * [4. Leverage Network Policies to restrict access](#4-leverage-network-policies-to-restrict-access)
 * [5. Leverage persistent storage using CSI](#5-leverage-persistent-storage-using-csi)
-* [6. Deploy Studio](#6-deploy-studio)
+* [6. Deploy KUDO Studio - Deploy Zookeeper, Kafka and Workload](#6-Deploy-KUDO-Studio---Deploy-Zookeeper,-Kafka-and-Workload)
 * [7. Deploy Apache Kafka using KUDO](#7-deploy-apache-kafka-using-kudo)
 * [8. Scale a Konvoy cluster](#8-scale-a-konvoy-cluster)
 * [9. Konvoy monitoring](#9-konvoy-monitoring)
@@ -593,7 +593,7 @@ pod=$(kubectl get pods | grep ebs-dynamic-app | awk '{ print $1 }')
 kubectl exec -i $pod cat /data/out.txt
 ```
 
-## 7. Deploy KUDO Studio - Deploy Zookeeper, Kafka and Workload
+## 6. Deploy KUDO Studio - Deploy Zookeeper, Kafka and Workload
 
 The Kubernetes Universal Declarative Operator (KUDO) is a highly productive toolkit for writing operators for Kubernetes. Using KUDO, you can deploy your applications, give your users the tools they need to operate it, and understand how it's behaving in their environments — all without a PhD in Kubernetes.
 
@@ -720,7 +720,7 @@ kafka-kafka-1                          1/1     Running   0          58s
 kafka-kafka-2                          1/1     Running   0          118s
 ```
 
-## Run KUDO Studio
+## 8. Run an application: KUDO Studio
 
 ### Deploy Kafka Client API, Svelte front-end, and Node.js Websocket server
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-python-api/kafka-client-api.yaml`
