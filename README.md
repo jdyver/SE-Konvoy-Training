@@ -607,7 +607,13 @@ sudo mv kubectl-kudo_0.10.0_linux_x86_64 /usr/local/bin/kubectl-kudo
 chmod +x /usr/local/bin/kubectl-kudo
 ```
 
-Run the following commands to deploy KUDO on your Kubernetes cluster:
+#### Check KUDO version
+
+```
+kubectl kudo version
+```
+
+#### Install KUDO
 
 ```
 kubectl kudo init
@@ -615,12 +621,13 @@ kubectl kudo init
 
 The output should be similar to:
 ```
-
-$KUDO_HOME has been configured at /home/centos/.kudo.
+$KUDO_HOME has been configured at /Users/jamesdyckowski/.kudo
+✅ installed crds
+✅ installed service accounts and other requirements for controller to run
+✅ installed kudo controller
 ```
 
 Check the status of the KUDO controller:
-
 ```
 kubectl get pods -n kudo-system
 ```
@@ -631,7 +638,7 @@ NAME                        READY   STATUS    RESTARTS   AGE
 kudo-controller-manager-0   1/1     Running   0          84s
 ```
 
-Deploy ZooKeeper using KUDO:
+#### Deploy ZooKeeper using KUDO:
 
 ```
 kubectl kudo install zookeeper
@@ -643,6 +650,8 @@ operator.kudo.dev/v1beta1/zookeeper created
 operatorversion.kudo.dev/v1beta1/zookeeper-0.2.0 created
 instance.kudo.dev/v1beta1/zk created
 ```
+
+#### KUDO - Zookeeper operator status
 
 Check the status of the deployment:
 
@@ -681,14 +690,17 @@ zk-zookeeper-1                         1/1     Running   0          21m
 zk-zookeeper-2                         1/1     Running   0          21m
 ```
 
-Deploy Kafka 2.2.1 using KUDO (the version of the KUDO Kafka operator is 0.1.3):
+#### Deploy Kafka 2.2.1 using KUDO 
+
+Note the version of the KUDO Kafka operator is 0.1.3.
 
 ```
 kubectl kudo install kafka --instance kafka --operator-version 0.1.3
 ```
 
-Check the status of the deployment:
+#### KUDO - Kafka operator status
 
+Check the status of the deployment:
 ```
 kubectl kudo plan status --instance kafka
 ```
@@ -720,18 +732,18 @@ kafka-kafka-1                          1/1     Running   0          58s
 kafka-kafka-2                          1/1     Running   0          118s
 ```
 
-## 8. Run an application: KUDO Studio
+## 7. Run an application: KUDO Studio
 
-### Deploy Kafka Client API, Svelte front-end, and Node.js Websocket server
+#### Deploy Kafka Client API, Svelte front-end, and Node.js Websocket server
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-python-api/kafka-client-api.yaml`
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/svelte-ui/svelte-client.yaml`
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-node-js-api/kafka-node-js-api.yaml`
 1. `kubectl apply -f https://raw.githubusercontent.com/tbaums/konvoy-kudo-studio/master/kafka-dummy-actors/kafka-dummy-actor.yaml`
 
-### Navigate to Svelte UI
+#### Navigate to Svelte UI
 1. Visit \<your AWS elb\>/svelte
 
-### Begin demonstration
+#### Begin demonstration
 
 #### Manufacturing and IoT example
 1. Click 'Manufactoring & IoT' in the Nav bar
@@ -753,7 +765,9 @@ kafka-kafka-2                          1/1     Running   0          118s
 1. Observe Node.js Kafka API reading from Kafka queue and returning the mouse movements in the right-hand screenshot
 1. Observe POST request duration (should be ~500ms)
 
-## 9. KUDO Management
+## 8. KUDO Operator Management
+
+#### KUDO Custom Resource Definitions
 
 KUDO is creating CRDs (new objects) in Kubernetes and you can get information about these objects like you can get informations about pods, deployments, ...
 
@@ -797,6 +811,8 @@ The output should be similar to:
 
 This is also the approach you take to delete a running instance (`kubectl delete instances.kudo.dev kafka`), but you can keep it running.
 
+#### Upgrade to Kafka 2.3.0 using KUDO
+
 Upgrade your Kafka cluster to 2.3.0 (the version of the KUDO Kafka operator is 1.0.0) using the following command:
 
 ```
@@ -828,7 +844,7 @@ Plan(s) for "kafka" in namespace "default":
                 └── not-allowed [NOT ACTIVE]
 ```
 
-And get information about the upgraded KUDO Kafka instance:
+Get information about the upgraded KUDO Kafka instance:
 
 ```
 kubectl get instances.kudo.dev kafka -o yaml
@@ -900,9 +916,9 @@ kudo-kafka-generator-d655d6dff-5pztl   1/1     Running   0          28m
 
 You can also easily update the configuration of your Kafka cluster.
 
-### 8. Scalability up and down the stack
+### 9. Scalability up and down the stack
 
-#### Demonstrate the power of application horizontal scaling
+#### Scale pods using Kubernetes
 
 To demonstrate the power of granular microservice scaling, first we need to generate more load on the Python Kafka API. We will then observe POST request times increase. Lastly, we will scale the Python Kafka API and observe POST request times return to normal.
 
@@ -913,7 +929,7 @@ From User Research screen (assumes above demo steps completed):
 1. `kubectl scale deploy kafka-client-api --replicas=5`
 1. Observe POST request duration (should return to ~500ms)
 
-#### For example, you can add more brokers using the command below.
+#### Scale Kafka brokers using KUDO
 
 ```
 kubectl kudo update --instance kafka -p BROKER_COUNT=5
@@ -961,7 +977,7 @@ kudo-kafka-consumer-6b4dd5cd59-r7svb   1/1     Running   0          33m
 kudo-kafka-generator-d655d6dff-5pztl   1/1     Running   0          33m
 ```
 
-### Scale Konvoy cluster nodes
+#### Scale Kubernetes worker nodes using Konvoy
 
 Edit the `cluster.yaml` file to change the worker count from 5 to 6:
 ```
@@ -994,7 +1010,7 @@ ip-10-0-194-91.us-west-2.compute.internal    Ready    master   46m    v1.15.2
 ip-10-0-195-21.us-west-2.compute.internal    Ready    master   47m    v1.15.2
 ```
 
-## 9. Konvoy monitoring
+## 10. Konvoy monitoring
 
 In Konvoy, all the metrics are stored in a Prometheus cluster and exposed through Grafana.
 
@@ -1040,7 +1056,7 @@ Select `Prometheus` in the `Prometheus` field and click on `Import`.
 
 ![Grafana Kafka](images/grafana-kafka.png)
 
-## 10. Konvoy logging/debugging
+## 11. Konvoy logging/debugging
 
 In Konvoy, all the logs are stored in an Elasticsearch cluster and exposed through Kibana.
 
@@ -1058,7 +1074,7 @@ Then, search for `redis`:
 
 You'll see all the logs related to the redis Pod and Service you deployed previously.
 
-## 11. Upgrade a Konvoy cluster
+## 12. Upgrade a Konvoy cluster
 
 Edit the `cluster.yaml` file to change the Kubernetes version from `1.15.2` to `1.15.3` in the 2 corresponding fields:
 ```
@@ -1214,7 +1230,7 @@ Check that the `ebs-dynamic-app` apps are still accessible.
 
 The `Redis` and the `http-echo` apps aren't running anymore as they haven't been deployed using a `deployment`.
 
-## 12. Destroy a Konvoy cluster
+## 13. Destroy a Konvoy cluster
 
 ### ... Don't do this if we aren't finished : )
 
@@ -1230,7 +1246,7 @@ The konvoy down command then begins removing cluster resources by deleting load 
 
 After konvoy down removes these resources, it uses Terraform to delete the resources created by the konvoy up command and Terraform provisioning.
 
-## Appendix 0. Ingress troubleshooting.
+## Appendix 1. Ingress troubleshooting
 
 In this section, we will leverage Konvoy logging to troubleshoot Ingress failure issue.
 
@@ -1320,7 +1336,7 @@ EOF
 ```
 ![dashboard nginx](images/trafik_nginx_200.png)
 
-## Appendix 1. Setting up an external identity provider
+## Appendix 2. Setting up an external identity provider
 
 Your Konvoy cluster contains a Dex instance which serves as an identity broker and allows you to integrate with Google's OAuth.
 
@@ -1407,7 +1423,7 @@ Run the following command to check that you can administer the Kubernetes cluste
 kubectl get nodes
 ```
 
-## Appendix 6. Deploy Jenkins using Helm
+## Appendix 3. Deploy Jenkins using Helm
 
 Helm is a tool for managing Kubernetes charts. Charts are packages of pre-configured Kubernetes resources.
 
